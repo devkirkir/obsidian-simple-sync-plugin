@@ -5,14 +5,14 @@ interface Change {
   rev: string;
 }
 
-interface Result {
+export interface ChangesResult {
   id: string;
   seq: string;
   changes: Change[];
 }
 
 export interface ChangesSucceed {
-  results: Result[];
+  results: ChangesResult[];
   last_seq: string;
   pending: number;
 }

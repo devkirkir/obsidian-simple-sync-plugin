@@ -2,14 +2,15 @@ import { changes } from "./changes";
 import { create } from "./create";
 import { removeAllDocs } from "./removeAllDocs";
 import { ChangesSucceed } from "./changes";
-import { CreateBody } from "./create";
+import { getBulk, BulkDoc } from "./getBulk";
 
 export default function services() {
   return {
     create,
     changes,
+    getBulk,
     removeAllDocs,
   };
 }
 
-export type { ChangesSucceed, CreateBody };
+export type { ChangesSucceed, BulkDoc };

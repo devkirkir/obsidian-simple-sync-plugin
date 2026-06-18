@@ -1,18 +1,15 @@
-import sync from "@modules/sync";
-import services, { CreateBody } from "@services";
 import { Plugin, TFile } from "obsidian";
 
-interface Files {
-  id: string;
-  rev: string;
-  isSync: boolean;
-  updatedAt: number;
-}
+import sync from "@modules/sync";
+import services from "@services";
+import { createFileWithDirectory } from "./utils/createFileWithDirectory";
+
+import { Doc, File } from "@/types";
 
 interface DefaultSettings {
   lastSeq: string | number;
   mode: "online" | "offline";
-  files: Record<string, Files>;
+  files: Record<string, File>;
 }
 
 export default class SimpleSyncPlugin extends Plugin {
@@ -21,39 +18,51 @@ export default class SimpleSyncPlugin extends Plugin {
   async onload() {
     // await services().removeAllDocs();
     await this.loadSettings();
-    const isSynced = await sync(this.settings.lastSeq);
+    const isSynced = await sync(this.settings.lastSeq, this.settings.files);
 
     if (isSynced.success && isSynced.data) {
-      const results = isSynced.data.results;
+      const newFiles: Record<string, File> = {};
 
-      // if (results.length > 0) {
-      // }
+      if (isSynced.data.pendingDocs) {
+        const docs = isSynced.data.pendingDocs;
 
-      this.settings = { ...this.settings, lastSeq: isSynced.data.last_seq, mode: "online" };
+        for (const [, doc] of docs.entries()) {
+          await createFileWithDirectory(this.app.vault, doc);
+
+          newFiles[doc.path] = { isSync: true, updatedAt: doc.updatedAt, rev: doc._rev, id: doc._id };
+        }
+      }
+
+      this.settings = {
+        ...this.settings,
+        files: { ...this.settings.files, ...newFiles },
+        lastSeq: isSynced.data.lastSeq,
+        mode: "online",
+      };
       await this.saveSettings();
     }
 
     this.registerEvent(
       this.app.vault.on("create", async (entity) => {
         if (entity instanceof TFile) {
-          const body: CreateBody = {
+          const updatedAt = Date.now();
+
+          const body: Doc = {
             name: entity.basename,
             extension: entity.extension,
             path: entity.path,
             content: "",
-            updatedAt: Date.now(),
+            updatedAt,
           };
 
           const resultData = await services().create(body);
-
-          console.log(resultData);
 
           if (resultData.success && resultData.data) {
             this.settings.files[entity.path] = {
               id: resultData.data.id,
               rev: resultData.data.rev,
               isSync: true,
-              updatedAt: Date.now(),
+              updatedAt,
             };
 
             await this.saveSettings();
@@ -72,7 +81,7 @@ export default class SimpleSyncPlugin extends Plugin {
   async loadSettings() {
     const saved = (await this.loadData()) as Partial<DefaultSettings>;
 
-    this.settings = { ...this.settings, ...saved, mode: "online" };
+    this.settings = { ...this.settings, ...saved };
   }
 
   async saveSettings() {

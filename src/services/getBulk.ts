@@ -1,33 +1,34 @@
 import { requestUrl } from "obsidian";
-import { v4 as uuidv4 } from "uuid";
+import { ChangesResult } from "./changes";
 import { Doc, PromiseReturn } from "@/types";
 
-interface Succeed {
-  ok: true;
-  id: string;
-  rev: string;
+export interface BulkDoc extends Doc {
+  _rev: string;
+  _id: string;
 }
 
-export const create = async (body: Doc): PromiseReturn<Succeed> => {
-  try {
-    const id = uuidv4();
+interface Bulk {
+  results: {
+    id: string;
+    docs: {
+      ok: BulkDoc;
+    }[];
+  }[];
+}
 
+export const getBulk = async (docs: ChangesResult[]): PromiseReturn<Bulk> => {
+  try {
     const res = await requestUrl({
-      url: `http://localhost:5984/files/${id}`,
-      method: "PUT",
+      url: `http://localhost:5984/files/_bulk_get`,
+      method: "POST",
       headers: {
         Authorization: "Basic " + btoa("admin:password"),
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
-      throw: false,
+      body: JSON.stringify({ docs: docs.map(({ id }) => ({ id })) }),
     });
 
-    if (res.status === 409) {
-      throw Error("Conflict docs. Need update");
-    }
-
-    return { success: true, data: res.json as Succeed };
+    return { success: true, data: res.json as unknown as Bulk };
   } catch (err) {
     if (typeof err === "object" && err !== null && "message" in err && typeof err.message == "string") {
       return { success: false, message: err.message };
