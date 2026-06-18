@@ -48,7 +48,9 @@ export default class SimpleSyncPlugin extends Plugin {
 
     this.registerEvent(
       this.app.vault.on("create", async (entity) => {
-        if (entity instanceof TFile) {
+        const isEntityExist = this.settings.files[entity.path];
+
+        if (!isEntityExist && entity instanceof TFile) {
           const updatedAt = Date.now();
 
           const body: Doc = {
@@ -69,7 +71,7 @@ export default class SimpleSyncPlugin extends Plugin {
               updatedAt,
             };
 
-            await this.saveSettings();
+            await this.saveData(this.settings);
           }
         }
       }),

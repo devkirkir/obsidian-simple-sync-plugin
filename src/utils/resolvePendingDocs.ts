@@ -23,11 +23,11 @@ function resolvePendingDocs(bulk: Bulk, files: Files): PendingDocs {
         return;
       }
 
-      const pendingRow = pendingDocs.get(bulkDoc.path);
-
       // handle when the path already exists in `pendingDocs` (DB has dublicate paths)
       // update to the newest doc by `updatedAt`
-      if (isDublicatePathAndNewer(pendingRow, bulkDoc)) pendingDocs.set(bulkDoc.path, bulkDoc);
+      const existingRow = pendingDocs.get(bulkDoc.path);
+
+      if (isDublicatePathAndNewer(existingRow, bulkDoc)) pendingDocs.set(bulkDoc.path, bulkDoc);
     }
 
     // if (localDoc && localDoc.updatedAt < bulkDoc.updatedAt && localDoc.rev !== bulkDoc._rev) {
