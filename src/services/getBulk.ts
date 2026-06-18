@@ -7,7 +7,7 @@ export interface BulkDoc extends Doc {
   _id: string;
 }
 
-interface Bulk {
+export interface Bulk {
   results: {
     id: string;
     docs: {

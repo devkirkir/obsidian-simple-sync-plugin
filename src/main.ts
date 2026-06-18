@@ -1,10 +1,10 @@
 import { Plugin, TFile } from "obsidian";
 
-import sync from "@modules/sync";
+import sync from "@usecases/sync";
 import services from "@services";
-import { createFileWithDirectory } from "./utils/createFileWithDirectory";
 
 import { Doc, File } from "@/types";
+import obsidianUtils, { initAppInstance } from "@utils/obsidian";
 
 interface DefaultSettings {
   lastSeq: string | number;
@@ -13,11 +13,14 @@ interface DefaultSettings {
 }
 
 export default class SimpleSyncPlugin extends Plugin {
-  settings: DefaultSettings = { lastSeq: 0, mode: "offline", files: {} };
+  private settings: DefaultSettings = { lastSeq: 0, mode: "offline", files: {} };
 
   async onload() {
-    // await services().removeAllDocs();
-    await this.loadSettings();
+    await this.initApp();
+
+    const utils = obsidianUtils();
+    if (!utils) return;
+
     const isSynced = await sync(this.settings.lastSeq, this.settings.files);
 
     if (isSynced.success && isSynced.data) {
@@ -27,7 +30,7 @@ export default class SimpleSyncPlugin extends Plugin {
         const docs = isSynced.data.pendingDocs;
 
         for (const [, doc] of docs.entries()) {
-          await createFileWithDirectory(this.app.vault, doc);
+          await utils.createFileWithDirectory(doc);
 
           newFiles[doc.path] = { isSync: true, updatedAt: doc.updatedAt, rev: doc._rev, id: doc._id };
         }
@@ -39,6 +42,7 @@ export default class SimpleSyncPlugin extends Plugin {
         lastSeq: isSynced.data.lastSeq,
         mode: "online",
       };
+
       await this.saveSettings();
     }
 
@@ -76,6 +80,12 @@ export default class SimpleSyncPlugin extends Plugin {
         console.log("modify", file);
       }),
     );
+  }
+
+  async initApp() {
+    initAppInstance(this.app);
+
+    await this.loadSettings();
   }
 
   async loadSettings() {

@@ -1,8 +1,8 @@
 {
   "id": "obsidian-simple-sync-plugin",
   "name": "Simple-Sync Plugin",
-  "version": "1.1.0",
-  "minAppVersion": "1.6.0",
+  "version": "1.6.0",
+  "minAppVersion": "1.4.0",
   "description": "obsidian-simple-sync-plugin",
   "author": "devkirkir",
   "authorUrl": "https://github.com/devkirkir",

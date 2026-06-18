@@ -18,7 +18,8 @@
     "paths": {
       "@/types": ["./src/types/index.ts"],
       "@services": ["./src/services/index.ts"],
-      "@modules/*": ["./src/modules/*"]
+      "@usecases/*": ["src/usecases/*"],
+      "@utils/*": ["src/utils/*"]
     }
   },
   "include": ["src/**/*.ts"]
