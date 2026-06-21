@@ -27,3 +27,5 @@ export interface File {
   rev: string;
   updatedAt: number;
 }
+
+export type Files = Record<string, File>;

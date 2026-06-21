@@ -1,14 +1,12 @@
-import services, { type BulkDoc } from "@services";
-import resolvePendingDocs from "@utils/resolvePendingDocs";
-import { File, PromiseReturn } from "@/types";
+import services from "@services";
+import resolvePendingDocs, { ResolvePendingDocs } from "@utils/resolvePendingDocs";
+import { Files, PromiseReturn } from "@/types";
 import { Notice } from "obsidian";
 
 interface Success {
   lastSeq: string;
-  pendingDocs?: Map<string, BulkDoc>;
+  docs?: ResolvePendingDocs;
 }
-
-export type Files = Record<string, File>;
 
 const service = services();
 
@@ -28,9 +26,9 @@ async function sync(lastSeq: string | number, files: Files): PromiseReturn<Succe
     const bulk = await service.getBulk(synced.data.results);
     if (!bulk.success) return { success: false, message: bulk.message };
 
-    const pendingDocs = resolvePendingDocs(bulk.data, files);
+    const docs = resolvePendingDocs(bulk.data, files);
 
-    return { success: true, data: { lastSeq: synced.data.last_seq, pendingDocs } };
+    return { success: true, data: { lastSeq: synced.data.last_seq, docs } };
   }
 
   return { success: true, data: { lastSeq: synced.data.last_seq } };

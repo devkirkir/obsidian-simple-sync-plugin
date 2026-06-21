@@ -1,6 +1,5 @@
 import { Bulk } from "@services";
 
-import { Files } from "@usecases/sync";
 import resolvePendingDocs from "@utils/resolvePendingDocs";
 
 describe("UTILS: resolvePendingDocs", () => {

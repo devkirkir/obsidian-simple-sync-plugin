@@ -1,7 +1,7 @@
 import { Plugin, TFile } from "obsidian";
 
 import sync from "@usecases/sync";
-import services from "@services";
+import services, { BulkDoc } from "@services";
 
 import { Doc, DocWithRev, File } from "@/types";
 import obsidianUtils, { initAppInstance } from "@utils/obsidian";
@@ -16,6 +16,7 @@ const dbServices = services();
 
 export default class SimpleSyncPlugin extends Plugin {
   private settings: DefaultSettings = { lastSeq: 0, mode: "offline", files: {} };
+  private isSynced: boolean = false;
 
   async onload() {
     // await dbServices.removeAllDocs();
@@ -24,38 +25,56 @@ export default class SimpleSyncPlugin extends Plugin {
     const utils = obsidianUtils();
     if (!utils) return;
 
-    const isSynced = await sync(this.settings.lastSeq, this.settings.files);
+    this.app.workspace.onLayoutReady(async () => {
+      this.isSynced = true;
 
-    if (isSynced.success && isSynced.data) {
-      const newFiles: Record<string, File> = {};
+      const isSynced = await sync(this.settings.lastSeq, this.settings.files);
 
-      if (isSynced.data.pendingDocs) {
-        const docs = isSynced.data.pendingDocs;
+      if (isSynced.success && isSynced.data) {
+        if (isSynced.data.docs) {
+          const docs = isSynced.data.docs;
 
-        for (const [, doc] of docs.entries()) {
-          await utils.createFileWithDirectory(doc);
+          for (const [oldPath, newDoc] of docs.renamedDocs) {
+            delete this.settings.files[oldPath];
 
-          newFiles[doc.path] = { updatedAt: doc.updatedAt, rev: doc._rev, id: doc._id };
+            this.settings.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
+            await this.saveSettings();
+
+            const file = this.app.vault.getFileByPath(oldPath);
+
+            if (file) {
+              await this.app.fileManager.renameFile(file, newDoc.path);
+              await this.app.vault.modify(file, newDoc.content);
+            }
+          }
+
+          for (const [, newDoc] of docs.pendingDocs.entries()) {
+            this.settings.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
+            await this.saveSettings();
+
+            await utils.createFileWithDirectory(newDoc);
+          }
         }
+
+        this.settings = {
+          ...this.settings,
+          lastSeq: isSynced.data.lastSeq,
+          mode: "online",
+        };
+
+        await this.saveSettings();
       }
 
-      this.settings = {
-        ...this.settings,
-        files: { ...this.settings.files, ...newFiles },
-        lastSeq: isSynced.data.lastSeq,
-        mode: "online",
-      };
-
-      await this.saveSettings();
-    }
+      this.isSynced = false;
+    });
 
     this.registerEvent(
       this.app.vault.on("create", async (entity) => {
-        console.log("create TAbstractFile", entity);
+        if (this.isSynced) return;
+
         const isEntityExist = this.settings.files[entity.path];
 
         if (!isEntityExist && entity instanceof TFile) {
-          console.log("create", entity);
           const updatedAt = Date.now();
 
           const body: Doc = {
@@ -83,11 +102,11 @@ export default class SimpleSyncPlugin extends Plugin {
 
     this.registerEvent(
       this.app.vault.on("modify", async (entity) => {
+        if (this.isSynced) return;
+
         const isEntityExist = this.settings.files[entity.path];
-        console.log("mofiy TAbstractFile", entity);
 
         if (isEntityExist && entity instanceof TFile) {
-          console.log("mofiy TFIle", entity);
           const updatedAt = Date.now();
 
           const body: DocWithRev = {
@@ -116,11 +135,11 @@ export default class SimpleSyncPlugin extends Plugin {
 
     this.registerEvent(
       this.app.vault.on("rename", async (entity, oldPath) => {
+        if (this.isSynced) return;
+
         const isEntityExist = this.settings.files[oldPath];
-        console.log("rename TAbstractFile", entity, oldPath);
 
         if (isEntityExist && entity instanceof TFile) {
-          console.log("rename TFIle", entity);
           const updatedAt = Date.now();
 
           const body: DocWithRev = {
