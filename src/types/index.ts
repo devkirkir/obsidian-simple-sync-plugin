@@ -18,9 +18,12 @@ export interface Doc {
   updatedAt: number;
 }
 
+export interface DocWithRev extends Doc {
+  _rev: string;
+}
+
 export interface File {
   id: string;
   rev: string;
-  isSync: boolean;
   updatedAt: number;
 }

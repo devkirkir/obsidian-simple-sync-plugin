@@ -1,6 +1,7 @@
 import services, { type BulkDoc } from "@services";
 import resolvePendingDocs from "@utils/resolvePendingDocs";
 import { File, PromiseReturn } from "@/types";
+import { Notice } from "obsidian";
 
 interface Success {
   lastSeq: string;
@@ -17,7 +18,11 @@ const service = services();
 
 async function sync(lastSeq: string | number, files: Files): PromiseReturn<Success> {
   const synced = await service.changes(lastSeq);
-  if (!synced.success) return synced;
+  if (!synced.success) {
+    new Notice(synced.message || "Ошибка синхронизации");
+
+    return synced;
+  }
 
   if (synced.data.results.length > 0) {
     const bulk = await service.getBulk(synced.data.results);
