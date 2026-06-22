@@ -1,7 +1,7 @@
 import { Plugin, TFile } from "obsidian";
 
 import sync from "@usecases/sync";
-import services, { BulkDoc } from "@services";
+import services from "@services";
 
 import { Doc, DocWithRev, File } from "@/types";
 import obsidianUtils, { initAppInstance } from "@utils/obsidian";
@@ -94,7 +94,7 @@ export default class SimpleSyncPlugin extends Plugin {
               updatedAt,
             };
 
-            await this.saveData(this.settings);
+            await this.saveSettings();
           }
         }
       }),
@@ -128,7 +128,7 @@ export default class SimpleSyncPlugin extends Plugin {
             };
           }
 
-          await this.saveData(this.settings);
+          await this.saveSettings();
         }
       }),
     );
@@ -163,7 +163,25 @@ export default class SimpleSyncPlugin extends Plugin {
             };
           }
 
-          await this.saveData(this.settings);
+          await this.saveSettings();
+        }
+      }),
+    );
+
+    this.registerEvent(
+      this.app.vault.on("delete", async (entity) => {
+        if (this.isSynced) return;
+
+        const isEntityExist = this.settings.files[entity.path];
+
+        if (isEntityExist && entity instanceof TFile) {
+          const resultData = await dbServices.deleteDoc(isEntityExist);
+
+          if (resultData.success && resultData.data) {
+            delete this.settings.files[entity.path];
+          }
+
+          await this.saveSettings();
         }
       }),
     );
