@@ -1,44 +1,40 @@
-import { Plugin, TFile } from "obsidian";
-
+import { Plugin } from "obsidian";
+import { Data, SettingTab } from "./settings";
 import sync from "@usecases/sync";
+import events from "@events";
+import obsidianUtils, { initAppInstance } from "@utils/obsidian";
 import services from "@services";
 
-import { Doc, DocWithRev, File } from "@/types";
-import obsidianUtils, { initAppInstance } from "@utils/obsidian";
-
-interface DefaultSettings {
-  lastSeq: string | number;
-  mode: "online" | "offline";
-  files: Record<string, File>;
-}
-
-const dbServices = services();
-
 export default class SimpleSyncPlugin extends Plugin {
-  private settings: DefaultSettings = { lastSeq: 0, mode: "offline", files: {} };
-  private isSynced: boolean = false;
+  data: Data = { lastSeq: 0, mode: "offline", files: {}, db: { credentials: null, url: null } };
+  isSynced: boolean = false;
 
   async onload() {
-    // await dbServices.removeAllDocs();
     await this.initApp();
-
+    // await services(this.data.db).removeAllDocs();
     const utils = obsidianUtils();
     if (!utils) return;
 
     this.app.workspace.onLayoutReady(async () => {
+      const settings = new SettingTab(this.app, this);
+      this.addSettingTab(settings);
+      const isSettingsCorrect = await settings.checkSettings();
+
+      if (!isSettingsCorrect) return;
+
       this.isSynced = true;
 
-      const isSynced = await sync(this.settings.lastSeq, this.settings.files);
+      const isSynced = await sync(this);
 
       if (isSynced.success && isSynced.data) {
         if (isSynced.data.docs) {
           const docs = isSynced.data.docs;
 
           for (const [oldPath, newDoc] of docs.renamedDocs) {
-            delete this.settings.files[oldPath];
+            delete this.data.files[oldPath];
 
-            this.settings.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
-            await this.saveSettings();
+            this.data.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
+            await this.saveData(this.data);
 
             const file = this.app.vault.getFileByPath(oldPath);
 
@@ -49,158 +45,41 @@ export default class SimpleSyncPlugin extends Plugin {
           }
 
           for (const [, newDoc] of docs.pendingDocs.entries()) {
-            this.settings.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
-            await this.saveSettings();
+            this.data.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
+            await this.saveData(this.data);
 
             await utils.createFileWithDirectory(newDoc);
           }
         }
 
-        this.settings = {
-          ...this.settings,
+        this.data = {
+          ...this.data,
           lastSeq: isSynced.data.lastSeq,
           mode: "online",
         };
 
-        await this.saveSettings();
+        await this.saveData(this.data);
       }
 
       this.isSynced = false;
     });
 
-    this.registerEvent(
-      this.app.vault.on("create", async (entity) => {
-        if (this.isSynced) return;
-
-        const isEntityExist = this.settings.files[entity.path];
-
-        if (!isEntityExist && entity instanceof TFile) {
-          const updatedAt = Date.now();
-
-          const body: Doc = {
-            name: entity.basename,
-            extension: entity.extension,
-            path: entity.path,
-            content: "",
-            updatedAt,
-          };
-
-          const resultData = await dbServices.create(body);
-
-          if (resultData.success && resultData.data) {
-            this.settings.files[entity.path] = {
-              id: resultData.data.id,
-              rev: resultData.data.rev,
-              updatedAt,
-            };
-
-            await this.saveSettings();
-          }
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("modify", async (entity) => {
-        if (this.isSynced) return;
-
-        const isEntityExist = this.settings.files[entity.path];
-
-        if (isEntityExist && entity instanceof TFile) {
-          const updatedAt = Date.now();
-
-          const body: DocWithRev = {
-            name: entity.basename,
-            extension: entity.extension,
-            path: entity.path,
-            content: await this.app.vault.cachedRead(entity),
-            _rev: isEntityExist.rev,
-            updatedAt,
-          };
-
-          const resultData = await dbServices.update(body, isEntityExist);
-
-          if (resultData.success && resultData.data) {
-            this.settings.files[entity.path] = {
-              id: resultData.data.id,
-              rev: resultData.data.rev,
-              updatedAt,
-            };
-          }
-
-          await this.saveSettings();
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("rename", async (entity, oldPath) => {
-        if (this.isSynced) return;
-
-        const isEntityExist = this.settings.files[oldPath];
-
-        if (isEntityExist && entity instanceof TFile) {
-          const updatedAt = Date.now();
-
-          const body: DocWithRev = {
-            name: entity.basename,
-            extension: entity.extension,
-            path: entity.path,
-            content: await this.app.vault.cachedRead(entity),
-            _rev: isEntityExist.rev,
-            updatedAt,
-          };
-
-          const resultData = await dbServices.update(body, isEntityExist);
-
-          if (resultData.success && resultData.data) {
-            delete this.settings.files[oldPath];
-
-            this.settings.files[entity.path] = {
-              id: resultData.data.id,
-              rev: resultData.data.rev,
-              updatedAt,
-            };
-          }
-
-          await this.saveSettings();
-        }
-      }),
-    );
-
-    this.registerEvent(
-      this.app.vault.on("delete", async (entity) => {
-        if (this.isSynced) return;
-
-        const isEntityExist = this.settings.files[entity.path];
-
-        if (isEntityExist && entity instanceof TFile) {
-          const resultData = await dbServices.deleteDoc(isEntityExist);
-
-          if (resultData.success && resultData.data) {
-            delete this.settings.files[entity.path];
-          }
-
-          await this.saveSettings();
-        }
-      }),
-    );
+    this.registerEvent(this.app.vault.on("create", events.create(this)));
+    this.registerEvent(this.app.vault.on("modify", events.modify(this)));
+    this.registerEvent(this.app.vault.on("rename", events.rename(this)));
+    this.registerEvent(this.app.vault.on("delete", events.delete(this)));
   }
 
   async initApp() {
     initAppInstance(this.app);
 
-    await this.loadSettings();
+    await this.loadDataFromFile();
   }
 
-  async loadSettings() {
-    const saved = (await this.loadData()) as Partial<DefaultSettings>;
+  async loadDataFromFile() {
+    const saved = (await this.loadData()) as unknown as Partial<Data>;
 
-    this.settings = { ...this.settings, ...saved };
-  }
-
-  async saveSettings() {
-    await this.saveData(this.settings);
+    this.data = { ...this.data, ...saved };
   }
 
   onunload() {}

@@ -1,37 +1,27 @@
 import { requestUrl } from "obsidian";
-import { PromiseReturn } from "@/types";
+import { File, PromiseReturn } from "@/types";
 import { DbData } from "@services";
 
-interface Change {
-  rev: string;
+interface Succeed {
+  purge_seq: null | string;
+  purged: Record<string, string[]>;
 }
 
-export interface ChangesResult {
-  id: string;
-  seq: string;
-  changes: Change[];
-}
-
-export interface ChangesSucceed {
-  results: ChangesResult[];
-  last_seq: string;
-  pending: number;
-}
-
-export const changes =
+export const purge =
   (dbData: DbData) =>
-  async (lastSeq: string | number): PromiseReturn<ChangesSucceed> => {
+  async (doc: File): PromiseReturn<Succeed> => {
     try {
       const res = await requestUrl({
-        url: `${dbData.url}/_changes?since=${lastSeq}`,
-        method: "GET",
+        url: `${dbData.url}/_purge`,
+        method: "POST",
         headers: {
           Authorization: "Basic " + btoa(dbData.credentials!),
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ [doc.id]: [doc.rev] }),
       });
 
-      return { success: true, data: res.json as unknown as ChangesSucceed };
+      return { success: true, data: res.json as Succeed };
     } catch (err) {
       if (err instanceof Error) {
         return { success: false, message: err.message };
@@ -40,9 +30,6 @@ export const changes =
       if (typeof err === "object" && err !== null && "message" in err && typeof err.message == "string") {
         return { success: false, message: err.message };
       }
-      return {
-        success: false,
-        message: "Unexpected error",
-      };
+      return { success: false, message: "Unexpected error" };
     }
   };

@@ -1,6 +1,7 @@
 import { requestUrl } from "obsidian";
 import { ChangesResult } from "./changes";
 import { Doc, PromiseReturn } from "@/types";
+import { DbData } from "@services";
 
 export interface BulkDoc extends Doc {
   _rev: string;
@@ -16,23 +17,29 @@ export interface Bulk {
   }[];
 }
 
-export const getBulk = async (docs: ChangesResult[]): PromiseReturn<Bulk> => {
-  try {
-    const res = await requestUrl({
-      url: `http://localhost:5984/files/_bulk_get`,
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + btoa("admin:password"),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ docs: docs.map(({ id }) => ({ id })) }),
-    });
+export const getBulk =
+  (dbData: DbData) =>
+  async (docs: ChangesResult[]): PromiseReturn<Bulk> => {
+    try {
+      const res = await requestUrl({
+        url: `${dbData.url}/_bulk_get`,
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + btoa(dbData.credentials!),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ docs: docs.map(({ id }) => ({ id })) }),
+      });
 
-    return { success: true, data: res.json as unknown as Bulk };
-  } catch (err) {
-    if (typeof err === "object" && err !== null && "message" in err && typeof err.message == "string") {
-      return { success: false, message: err.message };
+      return { success: true, data: res.json as unknown as Bulk };
+    } catch (err) {
+      if (err instanceof Error) {
+        return { success: false, message: err.message };
+      }
+
+      if (typeof err === "object" && err !== null && "message" in err && typeof err.message == "string") {
+        return { success: false, message: err.message };
+      }
+      return { success: false, message: "Unexpected error" };
     }
-    return { success: false, message: "Unexpected error" };
-  }
-};
+  };

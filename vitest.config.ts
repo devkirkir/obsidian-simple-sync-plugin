@@ -8,6 +8,7 @@ export default defineConfig({
       "@services": resolve(__dirname, "src/services/index.ts"),
       "@usecases": resolve(__dirname, "src/usecases"),
       "@utils": resolve(__dirname, "src/utils"),
+      "@events": resolve(__dirname, "src/events/index.ts"),
     },
   },
   test: {

@@ -4,16 +4,21 @@ import { removeAllDocs } from "./removeAllDocs";
 import { ChangesSucceed } from "./changes";
 import { getBulk, BulkDoc, Bulk } from "./getBulk";
 import { update } from "./update";
-import { deleteDoc } from "./deleteDoc";
+import { purge } from "./purge";
 
-export default function services() {
+export interface DbData {
+  credentials: string | null;
+  url: string | null;
+}
+
+export default function services(dbData: DbData) {
   return {
-    create,
-    update,
-    deleteDoc,
-    changes,
-    getBulk,
-    removeAllDocs,
+    create: create(dbData),
+    update: update(dbData),
+    purge: purge(dbData),
+    changes: changes(dbData),
+    getBulk: getBulk(dbData),
+    removeAllDocs: removeAllDocs(dbData),
   };
 }
 

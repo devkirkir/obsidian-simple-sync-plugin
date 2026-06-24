@@ -1,3 +1,4 @@
+import { DbData } from "@services";
 import { requestUrl } from "obsidian";
 
 interface Row {
@@ -7,12 +8,12 @@ interface Row {
   };
 }
 
-export const removeAllDocs = async () => {
+export const removeAllDocs = (dbData: DbData) => async () => {
   const res = await requestUrl({
-    url: `http://localhost:5984/files/_all_docs`,
+    url: `${dbData.url}/_all_docs`,
     method: "GET",
     headers: {
-      Authorization: "Basic " + btoa("admin:password"),
+      Authorization: "Basic " + btoa(dbData.credentials!),
       "Content-Type": "application/json",
     },
   });
@@ -21,10 +22,10 @@ export const removeAllDocs = async () => {
   if (res.status === 200) {
     for (let row of q) {
       await requestUrl({
-        url: `http://localhost:5984/files/_purge`,
+        url: `${dbData.url}/_purge`,
         method: "POST",
         headers: {
-          Authorization: "Basic " + btoa("admin:password"),
+          Authorization: "Basic " + btoa(dbData.credentials!),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ [row.id]: [row.value.rev] }),
