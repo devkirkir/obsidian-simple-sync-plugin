@@ -25,7 +25,7 @@ function obsidianUtils() {
       new Notice(err.message);
     }
 
-    return false;
+    throw err;
   }
 }
 

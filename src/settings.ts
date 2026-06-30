@@ -1,12 +1,12 @@
 import { App, Notice, PluginSettingTab, SecretComponent, Setting } from "obsidian";
 import SimpleSyncPlugin from "./main";
-import { File } from "./types";
+import { File, UnsyncedFile } from "./types";
 import { DbData } from "@services";
 
 export interface Data {
   lastSeq: string | number;
-  mode: "online" | "offline";
   files: Record<string, File>;
+  unsyncedFiles: Record<string, UnsyncedFile>;
   db: DbData;
 }
 
@@ -37,6 +37,8 @@ export class SettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
+
+    containerEl.empty();
 
     new Setting(containerEl).setName("Couchdb URL").addText((component) => {
       component

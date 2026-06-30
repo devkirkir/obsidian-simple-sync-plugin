@@ -13,10 +13,11 @@ export const removeAllDocs = (dbData: DbData) => async () => {
     url: `${dbData.url}/_all_docs`,
     method: "GET",
     headers: {
-      Authorization: "Basic " + btoa(dbData.credentials!),
+      Authorization: "Basic " + btoa("admin:password"),
       "Content-Type": "application/json",
     },
   });
+
   const q = res.json.rows as Row[];
 
   if (res.status === 200) {
@@ -25,7 +26,7 @@ export const removeAllDocs = (dbData: DbData) => async () => {
         url: `${dbData.url}/_purge`,
         method: "POST",
         headers: {
-          Authorization: "Basic " + btoa(dbData.credentials!),
+          Authorization: "Basic " + btoa("admin:password"),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ [row.id]: [row.value.rev] }),

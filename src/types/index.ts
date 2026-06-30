@@ -28,4 +28,13 @@ export interface File {
   updatedAt: number;
 }
 
+export type UnsyncedFilesEvents = "create" | "update" | "purge";
+
+export interface UnsyncedFile {
+  id?: string;
+  rev?: string;
+  updatedAt: number;
+  event: UnsyncedFilesEvents;
+}
+
 export type Files = Record<string, File>;

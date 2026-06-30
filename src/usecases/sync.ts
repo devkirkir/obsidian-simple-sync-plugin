@@ -20,7 +20,7 @@ async function sync(app: SimpleSyncPlugin): PromiseReturn<Success> {
   }).changes(app.data.lastSeq);
 
   if (!synced.success) {
-    new Notice(synced.message || "Ошибка синхронизации");
+    new Notice(synced.message || "Sync error");
 
     return synced;
   }

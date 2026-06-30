@@ -9,12 +9,26 @@ function create(app: SimpleSyncPlugin) {
     if (app.isSynced) return;
 
     try {
-      checkDbSettings(app.data.db);
+      const localFile = app.data.files[entity.path];
+      const errors = checkDbSettings(app.data.db);
 
-      const isEntityExist = app.data.files[entity.path];
-
-      if (!isEntityExist && entity instanceof TFile) {
+      if (!localFile && entity instanceof TFile) {
         const updatedAt = Date.now();
+
+        if (errors.length > 0) {
+          errors.forEach((error) => {
+            new Notice(error);
+          });
+
+          app.data.unsyncedFiles[entity.path] = {
+            updatedAt,
+            event: "create",
+          };
+
+          await app.saveData(app.data);
+
+          return;
+        }
 
         const body: Doc = {
           name: entity.basename,
@@ -37,10 +51,22 @@ function create(app: SimpleSyncPlugin) {
           };
 
           await app.saveData(app.data);
+
+          // TODO сделать resync, если пропадало соединение
+          // сделать проверку на unsyncedFiles и обновить их
+          // ТУТ НАДО ПОДУМАТЬ ПОЛУЧШЕ
+          // чтобы не было проблемы перезатирания???
         }
 
         if (!resultData.success) {
           new Notice(resultData.message || "Unexpected error in create service");
+
+          app.data.unsyncedFiles[entity.path] = {
+            updatedAt,
+            event: "create",
+          };
+
+          await app.saveData(app.data);
         }
       }
     } catch (err) {

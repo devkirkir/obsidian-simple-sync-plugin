@@ -27,14 +27,15 @@ describe("UTILS: resolvePendingDocs", () => {
 
     const result = resolvePendingDocs(bulk, {});
 
-    expect(result).toEqual(
-      new Map([
+    expect(result).toEqual({
+      pendingDocs: new Map([
         [
           "title.md",
           { name: "title", extension: ".md", path: "title.md", content: "", updatedAt: 222, _id: "id1", _rev: "rev1" },
         ],
       ]),
-    );
+      renamedDocs: new Map(),
+    });
   });
 
   test("duplicate paths in bulk and replacement with a newer one", () => {
@@ -77,13 +78,14 @@ describe("UTILS: resolvePendingDocs", () => {
 
     const result = resolvePendingDocs(bulk, {});
 
-    expect(result).toEqual(
-      new Map([
+    expect(result).toEqual({
+      pendingDocs: new Map([
         [
           "title.md",
           { name: "title", extension: ".md", path: "title.md", content: "", updatedAt: 333, _id: "id2", _rev: "rev2" },
         ],
       ]),
-    );
+      renamedDocs: new Map(),
+    });
   });
 });

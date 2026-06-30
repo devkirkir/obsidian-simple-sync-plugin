@@ -1,4 +1,4 @@
-import { Plugin } from "obsidian";
+import { App, Modal, Plugin } from "obsidian";
 import { Data, SettingTab } from "./settings";
 import sync from "@usecases/sync";
 import events from "@events";
@@ -6,14 +6,13 @@ import obsidianUtils, { initAppInstance } from "@utils/obsidian";
 import services from "@services";
 
 export default class SimpleSyncPlugin extends Plugin {
-  data: Data = { lastSeq: 0, mode: "offline", files: {}, db: { credentials: null, url: null } };
+  data: Data = { lastSeq: 0, files: {}, unsyncedFiles: {}, db: { credentials: null, url: null } };
   isSynced: boolean = false;
 
   async onload() {
     await this.initApp();
+
     // await services(this.data.db).removeAllDocs();
-    const utils = obsidianUtils();
-    if (!utils) return;
 
     this.app.workspace.onLayoutReady(async () => {
       const settings = new SettingTab(this.app, this);
@@ -21,6 +20,8 @@ export default class SimpleSyncPlugin extends Plugin {
       const isSettingsCorrect = await settings.checkSettings();
 
       if (!isSettingsCorrect) return;
+
+      const utils = obsidianUtils();
 
       this.isSynced = true;
 
@@ -55,12 +56,16 @@ export default class SimpleSyncPlugin extends Plugin {
         this.data = {
           ...this.data,
           lastSeq: isSynced.data.lastSeq,
-          mode: "online",
         };
-
-        await this.saveData(this.data);
       }
 
+      if (!isSynced.success) {
+        this.data = {
+          ...this.data,
+        };
+      }
+
+      await this.saveData(this.data);
       this.isSynced = false;
     });
 

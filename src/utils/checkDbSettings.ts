@@ -1,11 +1,9 @@
 import { DbData } from "@services";
 
-function checkDbSettings(data: DbData): boolean {
-  Object.entries(data).forEach(([key, val]) => {
-    if (val === null) throw Error(`Fill '${key}' settings field!`);
-  });
-
-  return true;
+function checkDbSettings(data: DbData): string[] {
+  return Object.entries(data)
+    .filter(([_, val]) => val === null)
+    .map(([key]) => `Fill '${key}' settings field!`);
 }
 
 export default checkDbSettings;
