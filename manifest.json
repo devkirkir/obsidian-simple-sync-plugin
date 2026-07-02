@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-simple-sync-plugin",
-	"name": "Simple-Sync Plugin",
-	"version": "1.3.1",
-	"minAppVersion": "1.12.0",
-	"description": "obsidian-simple-sync-plugin",
-	"author": "devkirkir",
-	"authorUrl": "https://github.com/devkirkir",
-	"isDesktopOnly": false
+  "id": "simple-sync-plugin",
+  "name": "Simple-Sync Plugin",
+  "version": "1.3.1",
+  "minAppVersion": "1.12.0",
+  "description": "Syncs notes between your vault and a CouchDB",
+  "author": "devkirkir",
+  "authorUrl": "https://github.com/devkirkir",
+  "isDesktopOnly": false
 }
