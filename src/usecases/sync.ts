@@ -32,7 +32,7 @@ async function sync(app: SimpleSyncPlugin): PromiseReturn<Success> {
     }).getBulk(synced.data.results);
     if (!bulk.success) return { success: false, message: bulk.message };
 
-    const docs = resolvePendingDocs(bulk.data, app.data.files);
+    const docs = resolvePendingDocs(bulk.data, app.data.files, app.data.unsyncedFiles);
 
     return { success: true, data: { lastSeq: synced.data.last_seq, docs } };
   }

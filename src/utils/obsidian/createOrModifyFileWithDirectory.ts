@@ -10,7 +10,7 @@ interface Deps {
  * Creates or updates files ensures path exist
  */
 
-export const createFileWithDirectory = (deps: Deps) => async (doc: Doc) => {
+export const createOrModifyFileWithDirectory = (deps: Deps) => async (doc: Doc) => {
   try {
     await ensureDirectory({ vault: deps.vault })(doc.path.split("/").slice(0, -1));
 

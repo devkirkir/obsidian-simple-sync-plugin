@@ -1,6 +1,6 @@
 import { App, Notice } from "obsidian";
 import { ensureDirectory } from "./ensureDirectory";
-import { createFileWithDirectory } from "./createFileWithDirectory";
+import { createOrModifyFileWithDirectory } from "./createOrModifyFileWithDirectory";
 
 let _app: App | undefined;
 
@@ -18,7 +18,7 @@ function obsidianUtils() {
 
     return {
       ensureDirectory: ensureDirectory({ vault: _app.vault }),
-      createFileWithDirectory: createFileWithDirectory({ vault: _app.vault }),
+      createOrModifyFileWithDirectory: createOrModifyFileWithDirectory({ vault: _app.vault }),
     };
   } catch (err) {
     if (err instanceof Error) {

@@ -38,3 +38,4 @@ export interface UnsyncedFile {
 }
 
 export type Files = Record<string, File>;
+export type UnsyncedFiles = Record<string, UnsyncedFile>;
