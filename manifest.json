@@ -1,6 +1,6 @@
 {
-  "id": "simple-sync",
-  "name": "Simple-Sync Plugin",
+  "id": "simple-sync-notes",
+  "name": "Simple-Sync Notes Plugin",
   "version": "1.3.1",
   "minAppVersion": "1.12.0",
   "description": "Syncs notes between your vault and a CouchDB",
