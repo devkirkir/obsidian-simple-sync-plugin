@@ -1,7 +1,7 @@
 import { requestUrl } from "obsidian";
 import { ChangesResult } from "./changes";
-import { Doc, PromiseReturn } from "@/types";
 import { DbData } from "@services";
+import { Doc, PromiseReturn } from "@/types";
 
 export interface BulkDoc extends Doc {
   _rev: string;

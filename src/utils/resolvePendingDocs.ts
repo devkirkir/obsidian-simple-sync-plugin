@@ -20,8 +20,10 @@ function resolvePendingDocs(bulk: Bulk, files: Files): ResolvePendingDocs {
   bulk.results.forEach(({ docs }) => {
     if (!docs[0]) return;
 
-    const bulkDoc = docs[0].ok,
-      localDoc = files[bulkDoc.path];
+    const bulkDoc = docs[0].ok;
+    if (!bulkDoc) return;
+
+    const localDoc = files[bulkDoc.path];
 
     // handle when the path already exists in `pendingDocs` (DB has dublicate paths)
     // update to the newest doc by `updatedAt`
@@ -32,7 +34,11 @@ function resolvePendingDocs(bulk: Bulk, files: Files): ResolvePendingDocs {
       return;
     }
 
-    if (!localDoc) {
+    if (localDoc) {
+      if (localDoc.rev !== bulkDoc._rev) {
+        pendingDocs.set(bulkDoc.path, bulkDoc);
+      }
+    } else {
       // handle when the path was changes
       // update local doc to the newest doc
       const isRenamed = Object.entries(files).some(([localPath, file]) => {
@@ -47,15 +53,7 @@ function resolvePendingDocs(bulk: Bulk, files: Files): ResolvePendingDocs {
       if (!isRenamed) {
         pendingDocs.set(bulkDoc.path, bulkDoc);
       }
-    } else {
-      if (localDoc.rev !== bulkDoc._rev) {
-        pendingDocs.set(bulkDoc.path, bulkDoc);
-      }
     }
-
-    // if (localDoc && localDoc.updatedAt < bulkDoc.updatedAt && localDoc.rev !== bulkDoc._rev) {
-    //   obj[bulkDoc.path] = { ...bulkDoc };
-    // }
   });
 
   return { pendingDocs, renamedDocs };

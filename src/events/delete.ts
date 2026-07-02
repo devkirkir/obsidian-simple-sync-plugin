@@ -1,22 +1,34 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
 import SimpleSyncPlugin from "src/main";
 import services from "@services";
-import checkDbSettings from "@utils/checkDbSettings";
+import checkSettingsFields from "@utils/checkSettingsFields";
 
 function deleteEvent(app: SimpleSyncPlugin) {
   return async (entity: TAbstractFile) => {
     if (app.isSynced) return;
+    if (!(entity instanceof TFile)) return;
 
     try {
-      checkDbSettings(app.data.db);
+      const localFile = app.data.files[entity.path];
+      const errors = checkSettingsFields(app.data.db);
+      const updatedAt = Date.now();
 
-      const isEntityExist = app.data.files[entity.path];
+      if (errors.length > 0) {
+        app.data.unsyncedFiles[entity.path] = {
+          updatedAt,
+          event: "purge",
+        };
 
-      if (isEntityExist && entity instanceof TFile) {
+        await app.saveData(app.data);
+
+        return;
+      }
+
+      if (localFile) {
         const resultData = await services({
           ...app.data.db,
           credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
-        }).purge(isEntityExist);
+        }).purge(localFile);
 
         if (resultData.success && resultData.data) {
           delete app.data.files[entity.path];

@@ -1,35 +1,31 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
 import SimpleSyncPlugin from "src/main";
 import services from "@services";
+import checkSettingsFields from "@utils/checkSettingsFields";
 import { Doc } from "@/types";
-import checkDbSettings from "@utils/checkDbSettings";
 
 function create(app: SimpleSyncPlugin) {
   return async (entity: TAbstractFile) => {
     if (app.isSynced) return;
+    if (!(entity instanceof TFile)) return;
 
     try {
       const localFile = app.data.files[entity.path];
-      const errors = checkDbSettings(app.data.db);
+      const errors = checkSettingsFields(app.data.db);
+      const updatedAt = Date.now();
 
-      if (!localFile && entity instanceof TFile) {
-        const updatedAt = Date.now();
+      if (errors.length > 0) {
+        app.data.unsyncedFiles[entity.path] = {
+          updatedAt,
+          event: "create",
+        };
 
-        if (errors.length > 0) {
-          errors.forEach((error) => {
-            new Notice(error);
-          });
+        await app.saveData(app.data);
 
-          app.data.unsyncedFiles[entity.path] = {
-            updatedAt,
-            event: "create",
-          };
+        return;
+      }
 
-          await app.saveData(app.data);
-
-          return;
-        }
-
+      if (!localFile) {
         const body: Doc = {
           name: entity.basename,
           extension: entity.extension,

@@ -1,8 +1,8 @@
+import { Notice } from "obsidian";
+import SimpleSyncPlugin from "src/main";
 import services from "@services";
 import resolvePendingDocs, { ResolvePendingDocs } from "@utils/resolvePendingDocs";
 import { PromiseReturn } from "@/types";
-import { Notice } from "obsidian";
-import SimpleSyncPlugin from "src/main";
 
 interface Success {
   lastSeq: string;

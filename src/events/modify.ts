@@ -1,34 +1,45 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
 import SimpleSyncPlugin from "src/main";
 import services from "@services";
+import checkSettingsFields from "@utils/checkSettingsFields";
 import { DocWithRev } from "@/types";
-import checkDbSettings from "@utils/checkDbSettings";
 
 function modify(app: SimpleSyncPlugin) {
   return async (entity: TAbstractFile) => {
     if (app.isSynced) return;
+    if (!(entity instanceof TFile)) return;
 
     try {
-      checkDbSettings(app.data.db);
+      const localFile = app.data.files[entity.path];
+      const errors = checkSettingsFields(app.data.db);
 
-      const isEntityExist = app.data.files[entity.path];
+      const updatedAt = Date.now();
 
-      if (isEntityExist && entity instanceof TFile) {
-        const updatedAt = Date.now();
+      if (errors.length > 0) {
+        app.data.unsyncedFiles[entity.path] = {
+          updatedAt,
+          event: "update",
+        };
 
+        await app.saveData(app.data);
+
+        return;
+      }
+
+      if (localFile) {
         const body: DocWithRev = {
           name: entity.basename,
           extension: entity.extension,
           path: entity.path,
           content: await app.app.vault.cachedRead(entity),
-          _rev: isEntityExist.rev,
+          _rev: localFile.rev,
           updatedAt,
         };
 
         const resultData = await services({
           ...app.data.db,
           credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
-        }).update(body, isEntityExist);
+        }).update(body, localFile);
 
         if (resultData.success && resultData.data) {
           app.data.files[entity.path] = {

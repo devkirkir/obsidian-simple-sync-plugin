@@ -1,9 +1,9 @@
-import { App, Modal, Plugin } from "obsidian";
+import { Plugin } from "obsidian";
 import { Data, SettingTab } from "./settings";
 import sync from "@usecases/sync";
 import events from "@events";
 import obsidianUtils, { initAppInstance } from "@utils/obsidian";
-import services from "@services";
+// import services from "@services";
 
 export default class SimpleSyncPlugin extends Plugin {
   data: Data = { lastSeq: 0, files: {}, unsyncedFiles: {}, db: { credentials: null, url: null } };
@@ -15,42 +15,53 @@ export default class SimpleSyncPlugin extends Plugin {
     // await services(this.data.db).removeAllDocs();
 
     this.app.workspace.onLayoutReady(async () => {
+      this.isSynced = true;
+
+      this.registerEvent(this.app.vault.on("create", events.create(this)));
+      this.registerEvent(this.app.vault.on("modify", events.modify(this)));
+      this.registerEvent(this.app.vault.on("rename", events.rename(this)));
+      this.registerEvent(this.app.vault.on("delete", events.delete(this)));
+
       const settings = new SettingTab(this.app, this);
       this.addSettingTab(settings);
       const isSettingsCorrect = await settings.checkSettings();
 
-      if (!isSettingsCorrect) return;
+      if (!isSettingsCorrect) {
+        this.isSynced = false;
+        return;
+      }
 
       const utils = obsidianUtils();
 
-      this.isSynced = true;
-
       const isSynced = await sync(this);
+      if (!isSynced.success) {
+        this.isSynced = false;
 
-      if (isSynced.success && isSynced.data) {
-        if (isSynced.data.docs) {
-          const docs = isSynced.data.docs;
+        return;
+      }
 
-          for (const [oldPath, newDoc] of docs.renamedDocs) {
-            delete this.data.files[oldPath];
+      if (isSynced.success && isSynced.data.docs) {
+        const docs = isSynced.data.docs;
 
-            this.data.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
-            await this.saveData(this.data);
+        for (const [oldPath, newDoc] of docs.renamedDocs) {
+          delete this.data.files[oldPath];
 
-            const file = this.app.vault.getFileByPath(oldPath);
+          this.data.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
+          await this.saveData(this.data);
 
-            if (file) {
-              await this.app.fileManager.renameFile(file, newDoc.path);
-              await this.app.vault.modify(file, newDoc.content);
-            }
+          const file = this.app.vault.getFileByPath(oldPath);
+
+          if (file) {
+            await this.app.fileManager.renameFile(file, newDoc.path);
+            await this.app.vault.modify(file, newDoc.content);
           }
+        }
 
-          for (const [, newDoc] of docs.pendingDocs.entries()) {
-            this.data.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
-            await this.saveData(this.data);
+        for (const [, newDoc] of docs.pendingDocs.entries()) {
+          this.data.files[newDoc.path] = { updatedAt: newDoc.updatedAt, rev: newDoc._rev, id: newDoc._id };
+          await this.saveData(this.data);
 
-            await utils.createFileWithDirectory(newDoc);
-          }
+          await utils.createOrModifyFileWithDirectory(newDoc);
         }
 
         this.data = {
@@ -59,20 +70,9 @@ export default class SimpleSyncPlugin extends Plugin {
         };
       }
 
-      if (!isSynced.success) {
-        this.data = {
-          ...this.data,
-        };
-      }
-
       await this.saveData(this.data);
       this.isSynced = false;
     });
-
-    this.registerEvent(this.app.vault.on("create", events.create(this)));
-    this.registerEvent(this.app.vault.on("modify", events.modify(this)));
-    this.registerEvent(this.app.vault.on("rename", events.rename(this)));
-    this.registerEvent(this.app.vault.on("delete", events.delete(this)));
   }
 
   async initApp() {

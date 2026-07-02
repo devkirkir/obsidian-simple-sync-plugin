@@ -1,8 +1,8 @@
 import { requestUrl } from "obsidian";
 import { v4 as uuidv4 } from "uuid";
-import { Doc, PromiseReturn } from "@/types";
 import { DbData } from "@services";
 import ServiceError from "@utils/errors";
+import { Doc, PromiseReturn } from "@/types";
 
 interface Succeed {
   ok: true;

@@ -1,6 +1,6 @@
 import { requestUrl } from "obsidian";
-import { File, PromiseReturn } from "@/types";
 import { DbData } from "@services";
+import { File, PromiseReturn } from "@/types";
 
 interface Succeed {
   purge_seq: null | string;

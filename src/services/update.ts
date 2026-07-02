@@ -1,6 +1,6 @@
 import { requestUrl } from "obsidian";
-import { DocWithRev, File, PromiseReturn } from "@/types";
 import { DbData } from "@services";
+import { DocWithRev, File, PromiseReturn } from "@/types";
 
 interface Succeed {
   ok: true;

@@ -1,6 +1,6 @@
 import { requestUrl } from "obsidian";
-import { PromiseReturn } from "@/types";
 import { DbData } from "@services";
+import { PromiseReturn } from "@/types";
 
 interface Change {
   rev: string;
