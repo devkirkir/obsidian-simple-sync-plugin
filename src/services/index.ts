@@ -1,6 +1,5 @@
 import { changes } from "./changes";
 import { create } from "./create";
-import { removeAllDocs } from "./removeAllDocs";
 import { ChangesSucceed } from "./changes";
 import { getBulk, BulkDoc, Bulk } from "./getBulk";
 import { update } from "./update";
@@ -18,7 +17,6 @@ export default function services(dbData: DbData) {
     purge: purge(dbData),
     changes: changes(dbData),
     getBulk: getBulk(dbData),
-    removeAllDocs: removeAllDocs(dbData),
   };
 }
 

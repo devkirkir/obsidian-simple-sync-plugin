@@ -3,7 +3,6 @@ import { Data, SettingTab } from "./settings";
 import sync from "@usecases/sync";
 import events from "@events";
 import obsidianUtils, { initAppInstance } from "@utils/obsidian";
-// import services from "@services";
 
 export default class SimpleSyncPlugin extends Plugin {
   data: Data = { lastSeq: 0, files: {}, unsyncedFiles: {}, db: { credentials: null, url: null } };
@@ -11,8 +10,6 @@ export default class SimpleSyncPlugin extends Plugin {
 
   async onload() {
     await this.initApp();
-
-    // await services(this.data.db).removeAllDocs();
 
     this.app.workspace.onLayoutReady(async () => {
       this.isSynced = true;
