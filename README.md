@@ -1,4 +1,4 @@
-# Simple-Sync Plugin
+# Simple Sync Notes
 
 A plugin for [Obsidian](https://obsidian.md) that synchronizes your vault notes with a [CouchDB](https://couchdb.apache.org/) database.
 
@@ -25,9 +25,9 @@ This plugin is not yet available in the Obsidian Community Plugins directory.
 
 ### Manual installation
 
-1. Download `main.js`, `manifest.json`, and `styles.css` (if present) from the [latest release](../../releases).
+1. Download `main.js`, `manifest.json` from the [latest release](https://github.com/devkirkir/obsidian-simple-sync-plugin/releases/tag/1.3.1).
 2. Copy them into `<your-vault>/.obsidian/plugins/obsidian-simple-sync-plugin/`.
-3. Reload Obsidian and enable **Simple-Sync Plugin** in **Settings → Community plugins**.
+3. Reload Obsidian and enable **Simple Sync Notes** in **Settings → Community plugins**.
 
 ### Building from source
 
@@ -40,7 +40,7 @@ The compiled plugin (`main.js`) will be generated in the project root alongside 
 
 ## Setup
 
-1. Open **Settings → Simple-Sync Plugin**.
+1. Open **Settings → Simple Sync Notes**.
 2. Enter your **CouchDB URL** in the format `http[s]://[host]:[port]/[dbname]`.
 3. Create a secret containing your CouchDB credentials in the format `username:password` and select it in the **Credentials** field.
 4. Once both fields are filled in, the plugin will start syncing automatically.
