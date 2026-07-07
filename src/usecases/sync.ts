@@ -14,10 +14,9 @@ interface Success {
  */
 
 async function sync(app: SimpleSyncPlugin): PromiseReturn<Success> {
-  const synced = await services({
-    ...app.data.db,
-    credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
-  }).changes(app.data.lastSeq);
+  const service = services({ ...app.data.db, credentials: app.app.secretStorage.getSecret(app.data.db.credentials!) });
+
+  const synced = await service.changes(app.data.lastSeq);
 
   if (!synced.success) {
     new Notice(synced.message || "Sync error");
@@ -26,10 +25,7 @@ async function sync(app: SimpleSyncPlugin): PromiseReturn<Success> {
   }
 
   if (synced.data.results.length > 0) {
-    const bulk = await services({
-      ...app.data.db,
-      credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
-    }).getBulk(synced.data.results);
+    const bulk = await service.getBulk(synced.data.results);
     if (!bulk.success) return { success: false, message: bulk.message };
 
     const docs = resolvePendingDocs(bulk.data, app.data.files);
