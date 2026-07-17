@@ -1,5 +1,5 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
-import SimpleSyncPlugin from "src/main";
+import SimpleSyncPlugin from "@/main";
 import services from "@services";
 import checkSettingsFields from "@utils/checkSettingsFields";
 import { DocWithRev } from "@/types";
@@ -19,6 +19,10 @@ function rename(app: SimpleSyncPlugin) {
           updatedAt,
           event: "update",
         };
+
+        errors.forEach((errorMessage) => {
+          new Notice(errorMessage);
+        });
 
         await app.saveData(app.data);
 

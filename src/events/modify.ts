@@ -1,5 +1,5 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
-import SimpleSyncPlugin from "src/main";
+import SimpleSyncPlugin from "@/main";
 import services from "@services";
 import checkSettingsFields from "@utils/checkSettingsFields";
 import { DocWithRev } from "@/types";
@@ -14,12 +14,16 @@ function modify(app: SimpleSyncPlugin) {
       const errors = checkSettingsFields(app.data.db);
 
       const updatedAt = Date.now();
-
+      // http://localhost:5984/notes
       if (errors.length > 0) {
         app.data.unsyncedFiles[entity.path] = {
           updatedAt,
           event: "update",
         };
+
+        errors.forEach((errorMessage) => {
+          new Notice(errorMessage);
+        });
 
         await app.saveData(app.data);
 

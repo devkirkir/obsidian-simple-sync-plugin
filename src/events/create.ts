@@ -1,5 +1,5 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
-import SimpleSyncPlugin from "src/main";
+import SimpleSyncPlugin from "@/main";
 import services from "@services";
 import checkSettingsFields from "@utils/checkSettingsFields";
 import { Doc } from "@/types";
@@ -19,6 +19,10 @@ function create(app: SimpleSyncPlugin) {
           updatedAt,
           event: "create",
         };
+
+        errors.forEach((errorMessage) => {
+          new Notice(errorMessage);
+        });
 
         await app.saveData(app.data);
 

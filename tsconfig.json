@@ -8,18 +8,18 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "baseUrl": ".",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "isolatedModules": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "lib": ["ES2021", "DOM"],
     "paths": {
+      "@/*": ["./src/*"],
       "@/types": ["./src/types/index.ts"],
       "@services": ["./src/services/index.ts"],
-      "@usecases/*": ["src/usecases/*"],
-      "@utils/*": ["src/utils/*"],
+      "@usecases/*": ["./src/usecases/*"],
+      "@utils/*": ["./src/utils/*"],
       "@events": ["./src/events/index.ts"]
     },
     "types": ["vitest/globals"]

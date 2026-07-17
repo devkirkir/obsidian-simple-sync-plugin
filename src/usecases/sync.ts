@@ -1,5 +1,5 @@
 import { Notice } from "obsidian";
-import SimpleSyncPlugin from "src/main";
+import SimpleSyncPlugin from "@/main";
 import services from "@services";
 import resolvePendingDocs, { ResolvePendingDocs } from "@utils/resolvePendingDocs";
 import { PromiseReturn } from "@/types";
@@ -14,7 +14,10 @@ interface Success {
  */
 
 async function sync(app: SimpleSyncPlugin): PromiseReturn<Success> {
-  const service = services({ ...app.data.db, credentials: app.app.secretStorage.getSecret(app.data.db.credentials!) });
+  const service = services({
+    url: app.data.db.url,
+    credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
+  });
 
   const synced = await service.changes(app.data.lastSeq);
 
