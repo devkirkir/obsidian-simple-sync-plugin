@@ -23,21 +23,6 @@ This project was built out of personal interest — as a way to explore how sync
 
 This plugin is not yet available in the Obsidian Community Plugins directory.
 
-### Manual installation
-
-1. Download `main.js`, `manifest.json` from the [latest release](https://github.com/devkirkir/obsidian-simple-sync-plugin/releases/tag/1.3.1).
-2. Copy them into `<your-vault>/.obsidian/plugins/obsidian-simple-sync-plugin/`.
-3. Reload Obsidian and enable **Simple Sync Notes** in **Settings → Community plugins**.
-
-### Building from source
-
-```bash
-npm install
-npm run build
-```
-
-The compiled plugin (`main.js`) will be generated in the project root alongside `manifest.json`.
-
 ## Setup
 
 1. Open **Settings → Simple Sync Notes**.
