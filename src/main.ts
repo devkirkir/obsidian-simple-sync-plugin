@@ -2,10 +2,12 @@ import { Plugin } from "obsidian";
 import { Data, SettingTab } from "./settings";
 import sync from "@usecases/sync";
 import events from "@events";
-import obsidianUtils, { initAppInstance } from "@utils/obsidian";
+import obsidianUtils from "@utils/obsidian";
+// import resolveUnsyncedFiles from "./usecases/resolveUnsyncedFiles";
+import { initAppInstance } from "./utils/appInstance";
 
 export default class SimpleSyncPlugin extends Plugin {
-  data: Data = { lastSeq: 0, files: {}, unsyncedFiles: {}, db: { credentials: null, url: null } };
+  data: Data = { lastSeq: 0, files: {}, unsyncedFiles: {}, db: { credentials: null, url: null }, isOnline: false };
   isSynced: boolean = false;
 
   async onload() {
@@ -21,10 +23,12 @@ export default class SimpleSyncPlugin extends Plugin {
 
       const settings = new SettingTab(this.app, this);
       this.addSettingTab(settings);
-      const isSettingsCorrect = await settings.checkSettings();
 
+      const isSettingsCorrect = await settings.checkSettings();
       if (!isSettingsCorrect) {
         this.isSynced = false;
+        await this.saveData(this.data);
+
         return;
       }
 
@@ -32,12 +36,16 @@ export default class SimpleSyncPlugin extends Plugin {
 
       const isSynced = await sync(this);
       if (!isSynced.success) {
+        this.data.isOnline = false;
         this.isSynced = false;
 
+        await this.saveData(this.data);
         return;
       }
 
       if (isSynced.success && isSynced.data.docs) {
+        this.data.isOnline = true;
+
         const docs = isSynced.data.docs;
 
         for (const [oldPath, newDoc] of docs.renamedDocs) {
@@ -67,13 +75,16 @@ export default class SimpleSyncPlugin extends Plugin {
         };
       }
 
-      await this.saveData(this.data);
+      // await resolveUnsyncedFiles(this, this.data.unsyncedFiles);
+
       this.isSynced = false;
+
+      await this.saveData(this.data);
     });
   }
 
   async initApp() {
-    initAppInstance(this.app);
+    initAppInstance(this);
 
     await this.loadDataFromFile();
   }

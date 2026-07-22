@@ -1,7 +1,6 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
 import SimpleSyncPlugin from "@/main";
-import services from "@services";
-import checkSettingsFields from "@utils/checkSettingsFields";
+import serviceFactory from "@services";
 import { DocWithRev } from "@/types";
 
 function modify(app: SimpleSyncPlugin) {
@@ -11,26 +10,36 @@ function modify(app: SimpleSyncPlugin) {
 
     try {
       const localFile = app.data.files[entity.path];
-      const errors = checkSettingsFields(app.data.db);
-
       const updatedAt = Date.now();
-      // http://localhost:5984/notes
-      if (errors.length > 0) {
-        app.data.unsyncedFiles[entity.path] = {
-          updatedAt,
-          event: "update",
-        };
 
-        errors.forEach((errorMessage) => {
-          new Notice(errorMessage);
-        });
+      if (!app.data.isOnline) {
+        const unsyncedFile = app.data.unsyncedFiles[entity.path];
 
-        await app.saveData(app.data);
+        if (!localFile && !unsyncedFile) {
+          app.data.unsyncedFiles[entity.path] = {
+            updatedAt,
+            event: "create",
+          };
 
-        return;
+          await app.saveData(app.data);
+          return;
+        }
+
+        if (unsyncedFile) {
+          app.data.unsyncedFiles[entity.path] = {
+            updatedAt,
+            event: "update",
+          };
+
+          await app.saveData(app.data);
+          return;
+        }
       }
 
-      if (localFile) {
+      if (localFile && app.data.isOnline) {
+        const updateService = serviceFactory("update");
+        if (!updateService) return;
+
         const body: DocWithRev = {
           name: entity.basename,
           extension: entity.extension,
@@ -40,10 +49,7 @@ function modify(app: SimpleSyncPlugin) {
           updatedAt,
         };
 
-        const resultData = await services({
-          ...app.data.db,
-          credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
-        }).update(body, localFile);
+        const resultData = await updateService(body, localFile);
 
         if (resultData.success && resultData.data) {
           app.data.files[entity.path] = {

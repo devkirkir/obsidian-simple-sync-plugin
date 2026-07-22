@@ -1,24 +1,16 @@
-import { App, Notice } from "obsidian";
+import { Notice } from "obsidian";
 import { ensureDirectory } from "./ensureDirectory";
 import { createOrModifyFileWithDirectory } from "./createOrModifyFileWithDirectory";
-
-let _app: App | undefined;
-
-export function initAppInstance(app: App) {
-  _app = app;
-}
-
-export function getApp() {
-  return _app;
-}
+import { getAppInstance } from "../appInstance";
 
 function obsidianUtils() {
   try {
-    if (!_app) throw Error("App instance is not init");
+    const appInstance = getAppInstance();
+    if (!appInstance) throw Error("App instance is not init");
 
     return {
-      ensureDirectory: ensureDirectory({ vault: _app.vault }),
-      createOrModifyFileWithDirectory: createOrModifyFileWithDirectory({ vault: _app.vault }),
+      ensureDirectory: ensureDirectory({ vault: appInstance.app.vault }),
+      createOrModifyFileWithDirectory: createOrModifyFileWithDirectory({ vault: appInstance.app.vault }),
     };
   } catch (err) {
     if (err instanceof Error) {

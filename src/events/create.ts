@@ -1,7 +1,6 @@
 import { Notice, TAbstractFile, TFile } from "obsidian";
 import SimpleSyncPlugin from "@/main";
-import services from "@services";
-import checkSettingsFields from "@utils/checkSettingsFields";
+import serviceFactory from "@services";
 import { Doc } from "@/types";
 
 function create(app: SimpleSyncPlugin) {
@@ -11,25 +10,34 @@ function create(app: SimpleSyncPlugin) {
 
     try {
       const localFile = app.data.files[entity.path];
-      const errors = checkSettingsFields(app.data.db);
       const updatedAt = Date.now();
 
-      if (errors.length > 0) {
-        app.data.unsyncedFiles[entity.path] = {
-          updatedAt,
-          event: "create",
-        };
+      if (!app.data.isOnline) {
+        if (!localFile) {
+          app.data.unsyncedFiles[entity.path] = {
+            updatedAt,
+            event: "create",
+          };
 
-        errors.forEach((errorMessage) => {
-          new Notice(errorMessage);
-        });
+          await app.saveData(app.data);
+          return;
+        }
 
-        await app.saveData(app.data);
+        if (localFile) {
+          app.data.unsyncedFiles[entity.path] = {
+            updatedAt,
+            event: "update",
+          };
 
-        return;
+          await app.saveData(app.data);
+          return;
+        }
       }
 
-      if (!localFile) {
+      if (!localFile && app.data.isOnline) {
+        const createService = serviceFactory("create");
+        if (!createService) return;
+
         const body: Doc = {
           name: entity.basename,
           extension: entity.extension,
@@ -38,10 +46,7 @@ function create(app: SimpleSyncPlugin) {
           updatedAt,
         };
 
-        const resultData = await services({
-          ...app.data.db,
-          credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
-        }).create(body);
+        const resultData = await createService(body);
 
         if (resultData.success && resultData.data) {
           app.data.files[entity.path] = {

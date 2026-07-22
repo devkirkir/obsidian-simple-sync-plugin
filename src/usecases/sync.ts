@@ -1,8 +1,8 @@
 import { Notice } from "obsidian";
 import SimpleSyncPlugin from "@/main";
-import services from "@services";
 import resolvePendingDocs, { ResolvePendingDocs } from "@utils/resolvePendingDocs";
 import { PromiseReturn } from "@/types";
+import serviceFactory from "@services";
 
 interface Success {
   lastSeq: string;
@@ -14,12 +14,12 @@ interface Success {
  */
 
 async function sync(app: SimpleSyncPlugin): PromiseReturn<Success> {
-  const service = services({
-    url: app.data.db.url,
-    credentials: app.app.secretStorage.getSecret(app.data.db.credentials!),
-  });
+  const changeService = serviceFactory("changes"),
+    getBulkService = serviceFactory("getBulk");
 
-  const synced = await service.changes(app.data.lastSeq);
+  if (!changeService || !getBulkService) return { success: false };
+
+  const synced = await changeService(app.data.lastSeq);
 
   if (!synced.success) {
     new Notice(synced.message || "Sync error");
@@ -28,7 +28,7 @@ async function sync(app: SimpleSyncPlugin): PromiseReturn<Success> {
   }
 
   if (synced.data.results.length > 0) {
-    const bulk = await service.getBulk(synced.data.results);
+    const bulk = await getBulkService(synced.data.results);
     if (!bulk.success) return { success: false, message: bulk.message };
 
     const docs = resolvePendingDocs(bulk.data, app.data.files);

@@ -2,12 +2,14 @@ import { App, Notice, PluginSettingTab, SecretComponent, Setting } from "obsidia
 import SimpleSyncPlugin from "./main";
 import { File, UnsyncedFile } from "./types";
 import { DbData } from "@services";
+import checkSettingsFields from "./utils/checkSettingsFields";
 
 export interface Data {
   lastSeq: string | number;
   files: Record<string, File>;
   unsyncedFiles: Record<string, UnsyncedFile>;
   db: DbData;
+  isOnline: boolean;
 }
 
 export class SettingTab extends PluginSettingTab {
@@ -19,8 +21,12 @@ export class SettingTab extends PluginSettingTab {
   }
 
   async checkSettings() {
-    if (!this.plugin.data.db.credentials || !this.plugin.data.db.url) {
-      new Notice("Fill settings");
+    const errors = checkSettingsFields(this.plugin.data.db);
+
+    if (errors.length > 0) {
+      errors.forEach((errorMessage) => {
+        new Notice(errorMessage);
+      });
 
       if ("setting" in this.app) {
         const setting = this.app.setting as { open(): Promise<void>; openTabById(id: string): void };
